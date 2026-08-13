@@ -10,7 +10,7 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 - [x] Task 5: family B (commit 7b0680b, review clean; 2 new tests, full suite 17/17)
 - [x] Task 6: family C (commit 07dc12c, review clean; 2 new tests, full suite 19/19)
 - [x] Task 7: family D (commit 4e92030, review clean; 2 new tests, full suite 21/21)
-- [ ] Task 8: Phase 2 search
+- [ ] Task 8: Phase 2 search (in fix loop: Important #1 plan-mandated hops fix)
 - [ ] Task 9: Phase 1 + finalize
 - [ ] Task 10: smoke validation
 
@@ -25,3 +25,5 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 - Task 5 (reviewer Minor, brief-mandated): mid-file `family_b_candidates` import; `_WASH_FILES` duplicated between impl and test (intentional pinning); report line-count numerics.
 - Task 6 (reviewer Minor, brief-inherited): mid-file `family_c_candidates` import; docstring says `<clean body>` but code uses "status digest" (cosmetic).
 - Task 7 (reviewer Minor, brief-inherited): mid-file `family_d_candidates` import (same tracked pattern).
+- Task 8 (reviewer Minor, brief-mandated): bare `except Exception: continue` swallows interact errors silently (diagnosability gap only); unused mid-file `import base64` in test; margin test only pins termination not the 15% itself; `b64` recomputed per iteration.
+- Task 8 (reviewer Minor #6, MUST fold into Task 9): `_phase2` reserves 15% of the budget it RECEIVES — Task 9 `run()` must pass `budget_s - phase1_elapsed` (remaining budget after Phase 1) or total can exceed the real deadline.
