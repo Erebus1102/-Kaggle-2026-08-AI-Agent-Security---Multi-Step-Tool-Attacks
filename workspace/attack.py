@@ -51,6 +51,13 @@ def is_clean(text: str) -> bool:
     return not any(p in lower for p in ULTRA_DANGEROUS)
 
 
+def _valid_candidate(messages: tuple[str, ...]) -> bool:
+    """True iff a candidate message chain satisfies all hard constraints."""
+    if not (1 <= len(messages) <= MAX_MESSAGES_PER_CANDIDATE):
+        return False
+    return all(len(m) <= MAX_MESSAGE_CHARS for m in messages)
+
+
 def _distinct_clean_domains(limit: int) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
