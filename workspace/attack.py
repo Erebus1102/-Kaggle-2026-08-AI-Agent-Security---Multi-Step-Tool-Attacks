@@ -5,6 +5,8 @@ Two-phase attacker:
   Phase 2 — timeboxed live search using eval_predicates (real-model signal).
 
 See docs/superpowers/specs/2026-08-13-attack-algorithm-design.md.
+
+# P2 smoke (2026-08-13): score 0.0, findings_count 0, unique_cells 0, no rejections (expected: deterministic agent hardcodes data="demo", predicates cannot trigger).
 """
 from __future__ import annotations
 
