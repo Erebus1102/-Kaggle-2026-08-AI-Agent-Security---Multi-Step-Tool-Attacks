@@ -3,7 +3,7 @@
 Plan: `docs/superpowers/plans/2026-08-13-attack-algorithm.md`
 Branch: `feat/attack-algorithm` (created in Task 1)
 
-- [ ] Task 1: setup (git + pytest + skeleton)
+- [x] Task 1: complete (commits deef2d6..5a8a675, review clean; fixed brief-inherited __main__ path off-by-one; accepted vendored pyproject.toml for aicomp CLI)
 - [ ] Task 2: clean-token generator
 - [ ] Task 3: constraint validator
 - [ ] Task 4: family A (direct multi-post)
