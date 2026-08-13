@@ -10,7 +10,7 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 - [x] Task 5: family B (commit 7b0680b, review clean; 2 new tests, full suite 17/17)
 - [x] Task 6: family C (commit 07dc12c, review clean; 2 new tests, full suite 19/19)
 - [x] Task 7: family D (commit 4e92030, review clean; 2 new tests, full suite 21/21)
-- [ ] Task 8: Phase 2 search (in fix loop: Important #1 plan-mandated hops fix)
+- [x] Task 8: Phase 2 search (commits a280f66..35e294d, review clean after fix; Important #1 hops resolved by always passing 8 per plan Global Constraints + CLAUDE.md; 3 new tests, full suite 24/24)
 - [ ] Task 9: Phase 1 + finalize
 - [ ] Task 10: smoke validation
 
