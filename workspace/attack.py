@@ -221,7 +221,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
 
     def run(self, env, config: AttackRunConfig) -> list[AttackCandidate]:
         budget_s = float(config.time_budget_s)
-        hops = min(int(config.max_tool_hops or HOSTED_MAX_TOOL_HOPS), HOSTED_MAX_TOOL_HOPS)
+        hops = HOSTED_MAX_TOOL_HOPS  # always 8: hosted cap; local gateway defaults to 4
 
         enumerated = _phase1()
         if self.search_enabled:
