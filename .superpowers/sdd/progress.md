@@ -12,7 +12,7 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 - [x] Task 7: family D (commit 4e92030, review clean; 2 new tests, full suite 21/21)
 - [x] Task 8: Phase 2 search (commits a280f66..35e294d, review clean after fix; Important #1 hops resolved by always passing 8 per plan Global Constraints + CLAUDE.md; 3 new tests, full suite 24/24)
 - [x] Task 9: Phase 1 + finalize (commit 7808f52, review clean; wordlist pool expanded 132→864 clean domains (reviewer verified 864/864), _N_URLS=600, 380 candidates, 5 new tests, full suite 29/29)
-- [ ] Task 10: smoke validation
+- [x] Task 10: smoke validation (commit b276bd8, review clean; deterministic smoke score 0.0/0/0 as expected, pipeline end-to-end clean, validate passes, docstring note recorded)
 
 ## Minor findings (triage at final whole-branch review)
 
@@ -27,4 +27,5 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 - Task 7 (reviewer Minor, brief-inherited): mid-file `family_d_candidates` import (same tracked pattern).
 - Task 8 (reviewer Minor, brief-mandated): bare `except Exception: continue` swallows interact errors silently (diagnosability gap only); unused mid-file `import base64` in test; margin test only pins termination not the 15% itself; `b64` recomputed per iteration.
 - Task 9 (reviewer Minor, brief-mandated): unused `family_a_candidates` in test import; density tests don't discriminate d8 from d4 / don't assert family ordering (ordering enforced by concatenation, verified by inspection); `_N_URLS` comment says "pool capacity (600)" but capacity is 864 (cosmetic).
+- Task 10 (reviewer Minor, brief-mandated): smoke note is a docstring string line not a `#` comment (brief said to put it in the docstring); note line ~180 chars (cosmetic).
 - Task 8 (reviewer Minor #6, evaluated at Task 9: NO CHANGE NEEDED): `_phase2` reserves 15% of the budget it receives — but `_phase1` is pure enumeration (~ms), so passing the full budget is safe; total stays within the real deadline.
