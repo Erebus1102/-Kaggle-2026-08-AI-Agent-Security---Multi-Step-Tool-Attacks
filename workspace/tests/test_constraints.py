@@ -23,3 +23,11 @@ def test_rejects_message_too_long():
 
 def test_accepts_message_at_limit():
     assert _valid_candidate(("x" * 2000,)) is True
+
+
+def test_rejects_empty_string_message():
+    assert _valid_candidate(("",)) is False
+
+
+def test_rejects_whitespace_message():
+    assert _valid_candidate((" ",)) is False
