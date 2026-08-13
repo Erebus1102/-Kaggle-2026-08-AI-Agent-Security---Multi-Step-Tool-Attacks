@@ -126,7 +126,7 @@ if __name__ == "__main__":  # pragma: no cover
     from aicomp_sdk.agents import build_agent  # re-exported from agents/__init__
     from aicomp_sdk.guardrails.optimal import Guardrail as OptimalGuardrail
 
-    fixtures = Path(__file__).resolve().parents[1].parent / (
+    fixtures = Path(__file__).resolve().parents[1] / (
         "ai-agent-security-multi-step-tool-attacks/aicomp_sdk/fixtures"
     )
     e = build_attack_env(
