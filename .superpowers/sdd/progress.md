@@ -20,3 +20,4 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 - Task 2: `_product` import mid-file (brief-mandated verbatim; PEP 8 placement only, no behavior).
 - Task 2: `is_clean` case-insensitivity and `clean_urls/clean_recipients` limit-truncation untested (brief-specified test set; optional coverage).
 - Task 3: `("",)` empty-string message case unpinned by any test (valid per contract; policy question for later filtering tasks — implementer flagged it too).
+- Task 4 (implementer concern, resolve at Task 9 wiring): `clean_urls` pool caps at 132 distinct domains (22 words × 6 TLDs) but family-A density defaults need 600 URL-slots — underfills the candidate set and caps cell diversity. Fix at Task 9: expand `_CLEAN_WORDS`/`_CLEAN_TLDS` to ≥600 distinct clean domains (all pre-screened with `is_clean`) or rescale densities to the pool.
