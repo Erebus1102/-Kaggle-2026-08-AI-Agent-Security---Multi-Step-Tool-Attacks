@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aicomp-sdk"
+version = "3.1.2"
+description = "AI Agent Security Competition SDK - Red teaming framework for tool-using AI agents"
+requires-python = ">=3.11"
+
+[project.scripts]
+aicomp = "aicomp_sdk.cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["aicomp_sdk*"]
