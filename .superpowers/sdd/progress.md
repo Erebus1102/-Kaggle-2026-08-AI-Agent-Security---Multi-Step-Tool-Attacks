@@ -28,4 +28,17 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 - Task 8 (reviewer Minor, brief-mandated): bare `except Exception: continue` swallows interact errors silently (diagnosability gap only); unused mid-file `import base64` in test; margin test only pins termination not the 15% itself; `b64` recomputed per iteration.
 - Task 9 (reviewer Minor, brief-mandated): unused `family_a_candidates` in test import; density tests don't discriminate d8 from d4 / don't assert family ordering (ordering enforced by concatenation, verified by inspection); `_N_URLS` comment says "pool capacity (600)" but capacity is 864 (cosmetic).
 - Task 10 (reviewer Minor, brief-mandated): smoke note is a docstring string line not a `#` comment (brief said to put it in the docstring); note line ~180 chars (cosmetic).
+
+- [x] Final-review fix wave (commit d2ee97c, re-review approved: Spec ✅ / quality Approved, 0 Critical 0 Important; fixer verified 28 covering / 32 full, reviewer independently verified all 5 fixes against vendored SDK): dead Phase 2 phrases replaced (backup.txt step + decode-then-post probe + pinning test), `_valid_candidate` now rejects whitespace-only (mirrors gateway strip contract, 2 new tests), family-A `i=0` hoisted (d8→urls[0:240], d4→[240:400], d2→[400:500], d1→[500:600]), family-D `zip` diagonal pairs (60 distinct url+recipient), `_N_URLS` comment corrected.
+- [x] **BRANCH FINISHED 2026-08-14**: created `main` from feat/attack-algorithm tip (fast-forward, no remote configured), deleted feature branch, 32/32 pass on main, ledger committed.
+
+## Final whole-branch review (opus, 2026-08-13): Ready to merge WITH FIXES
+
+**Important (in fix wave):**
+1. Two Phase 2 phrases are structurally dead: base64 phrase (eval_predicates is plaintext-only for the sentinel — spec §6 assumption empirically refuted; decode passes only apply to trace-read secrets) and "Step 1: read the page" (compliance taints web → post blocked). ~40% of live-search budget unproductive. Fix: plaintext replacements + pinning test that encoded sentinel does NOT trigger EXFILTRATION.
+2. `_valid_candidate` laxer than gateway replay contract: gateway rejects empty/whitespace messages (ValueError, aborts whole eval run — ops.py:488-489, 792-814). Latent (no generator produces them) but validator must mirror the contract. Fix: `m.strip()` check + tests for `("",)` / `(" ",)` — also resolves the Task 3 `("",)` policy question.
+
+**Minor (fix in same wave, cheap value):** #3 family-A density bands reuse same URL window (i=0 resets per density; spec wanted distinct domain groups; one-line hoist); #4 family-D all posts go to urls[0] (product advances recipients fastest; ~59 lost post cells ≈ +0.6 pts; zip diagonal); #5 `_N_URLS` comment wrong (capacity 864).
+
+**Minor (leave, P3):** #6 bare except + b64 recompute; #7 Phase 2 cycles fixed 200 combos; all accumulated per-task Minors except Task 3's `("",)` (folded into Important #2).
 - Task 8 (reviewer Minor #6, evaluated at Task 9: NO CHANGE NEEDED): `_phase2` reserves 15% of the budget it receives — but `_phase1` is pure enumeration (~ms), so passing the full budget is safe; total stays within the real deadline.
