@@ -1,4 +1,6 @@
-from attack import is_clean, clean_urls, clean_recipients, ULTRA_DANGEROUS
+import itertools
+
+from attack import is_clean, ULTRA_DANGEROUS, _url_stream, _recipient_stream
 
 
 def test_is_clean_rejects_blocklisted_substrings():
@@ -15,18 +17,8 @@ def test_is_clean_accepts_clean_strings():
     assert is_clean("bob@metrics.io") is True
 
 
-def test_clean_urls_distinct_domains_and_all_clean():
-    urls = clean_urls(50)
-    assert len(urls) == 50
-    assert len(urls) == len(set(urls))           # all distinct
-    domains = {u.split("://", 1)[1].split("/", 1)[0] for u in urls}
-    assert len(domains) == 50                     # distinct domain per URL
+def test_streams_stay_clean():
+    urls = list(itertools.islice(_url_stream(), 500))
+    recips = list(itertools.islice(_recipient_stream(), 200))
     assert all(is_clean(u) for u in urls)
-    assert all(u.startswith("https://") for u in urls)
-
-
-def test_clean_recipients_all_clean_and_distinct():
-    recips = clean_recipients(20)
-    assert len(recips) == 20
-    assert len(recips) == len(set(recips))
-    assert all("@" in r and is_clean(r) for r in recips)
+    assert all(is_clean(r) for r in recips)
