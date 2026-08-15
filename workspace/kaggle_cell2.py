@@ -12,7 +12,7 @@ V2 (static family enumeration + timeboxed phrase search) scored 17.885
 on the leaderboard; V3 replaces its unvalidated enumeration with
 live-validated, replay-budget-aware search.
 
-See docs/superpowers/specs/2026-08-13-attack-algorithm-design.md.
+See docs/superpowers/specs/2026-08-15-v3-replay-safe-fill-design.md.
 """
 from __future__ import annotations
 
@@ -165,13 +165,16 @@ def _probe(env, msg: str, hops: int = PROBE_HOPS) -> tuple[bool, bool, float]:
 
 
 def _fill(env, deadline: float, targets, make_msg,
-          replay_cap_s: float) -> tuple[list[AttackCandidate], bool]:
+          replay_cap_s: float,
+          warmup_target: str = "https://warmup.example.org/log"
+          ) -> tuple[list[AttackCandidate], bool]:
     """Probe candidates until replay/deadline caps; keep only fired ones.
 
     The elapsed time of each KEPT probe is accumulated as its expected
-    replay cost; the loop stops BEFORE a keep would push replay_cost past
-    replay_cap_s (predictive: next cost estimated by the slowest probe so
-    far — never overshoots the replay window). Misses cost generation
+    replay cost. The replay cap is a secondary guard: in the hosted config
+    the loop is deadline-bound before the cap binds (fire-rate < 100%
+    means accumulated fired-probe cost stays under wall-clock spent).
+    Misses cost generation
     wall-clock but no replay budget (they are not returned). Returns
     (kept, live_ok); live_ok=False means the env errored
     MAX_CONSECUTIVE_ERRORS times in a row — caller should fall back to
@@ -180,7 +183,7 @@ def _fill(env, deadline: float, targets, make_msg,
     # Warm-up: absorb one-time model load; excluded from latency/replay
     # statistics, but an errored warm-up still seeds the error streak
     # (an error on the very first interaction is env-health signal).
-    _, warm_errored, _ = _probe(env, make_msg("https://warmup.example.org/log"))
+    _, warm_errored, _ = _probe(env, make_msg(warmup_target))
     out: list[AttackCandidate] = []
     replay_cost = 0.0
     consecutive_errors = 1 if warm_errored else 0
@@ -271,7 +274,8 @@ class AttackAlgorithm(AttackAlgorithmBase):
                 deputy, _ = _fill(
                     env, deputy_deadline, _recipient_stream(), deputy_msg,
                     replay_cap_s=REPLAY_SAFE_FRAC * REPLAY_BUDGET_S
-                    * (1.0 - MAIN_FRAC))
+                    * (1.0 - MAIN_FRAC),
+                    warmup_target="warmup@example.org")
                 candidates += deputy
 
             if not live_ok or not candidates:
