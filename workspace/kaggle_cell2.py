@@ -309,3 +309,11 @@ if __name__ == "__main__":  # pragma: no cover
 with open('/kaggle/working/attack.py', 'w') as f:
     f.write(attack_code)
 print('attack.py written ✅')
+
+# Placeholder so the submit API finds the expected output file during
+# commit runs; the real one is written by the gateway during reruns.
+import os
+if not os.getenv('KAGGLE_IS_COMPETITION_RERUN'):
+    with open('/kaggle/working/submission.csv', 'w') as f:
+        f.write('Id,Score\n')
+    print('placeholder submission.csv written')

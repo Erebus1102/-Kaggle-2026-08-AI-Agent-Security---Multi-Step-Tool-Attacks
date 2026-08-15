@@ -44,7 +44,15 @@ def build_cell2() -> str:
         "attack_code = '''\n" + embedded + "'''\n\n"
         "with open('/kaggle/working/attack.py', 'w') as f:\n"
         "    f.write(attack_code)\n"
-        "print('attack.py written ✅')"
+        "print('attack.py written ✅')\n"
+        "\n"
+        "# Placeholder so the submit API finds the expected output file during\n"
+        "# commit runs; the real one is written by the gateway during reruns.\n"
+        "import os\n"
+        "if not os.getenv('KAGGLE_IS_COMPETITION_RERUN'):\n"
+        "    with open('/kaggle/working/submission.csv', 'w') as f:\n"
+        "        f.write('Id,Score\\n')\n"
+        "    print('placeholder submission.csv written')"
     )
 
 
