@@ -4,7 +4,7 @@ import itertools
 from attack import (
     AttackAlgorithm, _static_fallback, _url_stream,
     MIN_LIVE_BUDGET_S, MARGIN_FRAC, MAIN_FRAC, REPLAY_SAFE_FRAC,
-    REPLAY_BUDGET_S, MAX_CANDIDATES,
+    REPLAY_BUDGET_S, MAX_CANDIDATES, FALLBACK_POST_N,
 )
 from aicomp_sdk.attacks import AttackRunConfig
 
@@ -47,8 +47,20 @@ def test_run_dead_env_returns_fallback_not_empty():
     assert len(result) >= 1                   # never empty, never raises
 
 
-def test_run_live_misses_still_fallback():
+def test_run_live_misses_still_fallback(monkeypatch):
     # Live env healthy but 0 fires => fallback appended so replay has body.
+    # Bound the stream: 0-cost fake probes + infinite stream = busy loop
+    # until edge-prune. Bound = FALLBACK_POST_N (not 20) because
+    # _static_fallback also drinks from _url_stream and must stay
+    # full-size; stream exhaustion ends _fill naturally with live_ok=True,
+    # which is exactly the scenario under test, in milliseconds.
+    import attack as attack_mod
+    import itertools as _it
+
+    real_stream = attack_mod._url_stream
+    monkeypatch.setattr(
+        attack_mod, "_url_stream",
+        lambda: iter(_it.islice(real_stream(), FALLBACK_POST_N)))
     result = AttackAlgorithm().run(
         _FakeEnv(), AttackRunConfig(time_budget_s=300))
     assert len(result) >= 300                 # fallback body present
