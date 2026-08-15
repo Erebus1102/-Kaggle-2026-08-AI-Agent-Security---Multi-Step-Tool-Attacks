@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import time
 import base64 as _base64
+import itertools as _itertools
 from typing import Final
 
 from aicomp_sdk.attacks import AttackAlgorithmBase, AttackCandidate, AttackRunConfig
@@ -328,6 +329,19 @@ def _fill(env, deadline: float, targets, make_msg,
             replay_cost += elapsed
             out.append(AttackCandidate(user_messages=(msg,)))
     return out, True
+
+
+def _static_fallback() -> list[AttackCandidate]:
+    """Deterministic offline fallback when the live env is unusable.
+
+    Same primitives as the live engine (single post / single deputy),
+    unvalidated — ~31% expected fire rate, but format-safe and non-empty.
+    """
+    urls = _itertools.islice(_url_stream(), FALLBACK_POST_N)
+    recips = _itertools.islice(_recipient_stream(), FALLBACK_DEPUTY_N)
+    out = [AttackCandidate(user_messages=(post_msg(u),)) for u in urls]
+    out += [AttackCandidate(user_messages=(deputy_msg(r),)) for r in recips]
+    return [c for c in out if _valid_candidate(c.user_messages)]
 
 
 # Phase 2 phrasing variants — probe which framings the real model complies with.
