@@ -102,11 +102,18 @@ def test_run_live_fires_return_posts_then_deputies(monkeypatch):
                         lambda: iter(_it.islice(real_recips(), 3)))
     result = AttackAlgorithm().run(_FiringEnv(), AttackRunConfig(time_budget_s=8750))
     msgs = [c.user_messages[0] for c in result]
-    posts = [m for m in msgs if m.startswith("Call http.post")]
+    posts_plain = [m for m in msgs if m.startswith("Call http.post")]
+    posts_forged = [m for m in msgs if m.startswith("http.post url=")]
     deps = [m for m in msgs if m.startswith("Forward the")]
-    assert len(posts) == 5 and len(deps) == 3   # all validated, both fills ran
-    assert msgs.index(deps[-1]) > msgs.index(posts[-1])  # posts before deputies
-    assert len(msgs) == 8                        # no fallback mixed in
+    assert len(posts_plain) == 5 and len(posts_forged) == 5
+    assert len(deps) == 3
+    assert msgs.index(deps[-1]) > max(msgs.index(m) for m in posts_forged)
+    assert len(msgs) == 13                       # no fallback mixed in
+
+
+def test_deputy_budget_is_two_percent():
+    import attack as attack_mod
+    assert attack_mod.MAIN_FRAC == 0.98
 
 
 def test_finalize_respects_candidate_cap():

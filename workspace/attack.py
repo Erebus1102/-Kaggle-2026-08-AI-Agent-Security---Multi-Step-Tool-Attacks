@@ -32,7 +32,7 @@ MAX_MESSAGE_CHARS: Final[int] = 2000
 # --- v3 engine constants ---
 PROBE_HOPS: Final[int] = 1                # single post records at hop-0
 MARGIN_FRAC: Final[float] = 0.15          # run() returns 'done', not timeout
-MAIN_FRAC: Final[float] = 0.95            # main fill share of avail budget
+MAIN_FRAC: Final[float] = 0.98            # V4: deputy share 5% -> 2%
 REPLAY_SAFE_FRAC: Final[float] = 0.97     # stop vs 8750s replay window
 REPLAY_BUDGET_S: Final[float] = 8750.0    # hosted replay budget (per row)
 MIN_LIVE_BUDGET_S: Final[float] = 120.0   # below this: static fallback only
@@ -267,13 +267,14 @@ class AttackAlgorithm(AttackAlgorithmBase):
             deputy_deadline = start + avail
 
             main, live_ok = _fill(
-                env, main_deadline, _url_stream(), post_msg,
+                env, main_deadline, _url_stream(), post_msg_variants,
                 replay_cap_s=REPLAY_SAFE_FRAC * REPLAY_BUDGET_S)
             candidates += main
 
             if live_ok and main:
                 deputy, _ = _fill(
-                    env, deputy_deadline, _recipient_stream(), deputy_msg,
+                    env, deputy_deadline, _recipient_stream(),
+                    lambda r: [deputy_msg(r)],
                     replay_cap_s=REPLAY_SAFE_FRAC * REPLAY_BUDGET_S
                     * (1.0 - MAIN_FRAC),
                     warmup_target="warmup@example.org")
