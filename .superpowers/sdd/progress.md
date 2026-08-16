@@ -42,3 +42,15 @@ Branch: `feat/attack-algorithm` (created in Task 1)
 
 **Minor (leave, P3):** #6 bare except + b64 recompute; #7 Phase 2 cycles fixed 200 combos; all accumulated per-task Minors except Task 3's `("",)` (folded into Important #2).
 - Task 8 (reviewer Minor #6, evaluated at Task 9: NO CHANGE NEEDED): `_phase2` reserves 15% of the budget it receives — but `_phase1` is pure enumeration (~ms), so passing the full budget is safe; total stays within the real deadline.
+Task 1: complete (commits d9d70d7..ad91710, review clean; Minor noted: tautological >=864 assert, url-stream no uniqueness assert — brief-inherited)
+Task 2: complete (commits ad91710..013da96, review clean; downstream note: recipient pools must stay free of send/email/upload, is_clean doesn't enforce)
+Task 3: complete (commits 013da96..2ef7852, review clean; Minor: hops= override untested)
+Task 4: complete (commits 2ef7852..0a63517, review approved; deviations adjudicated forced+spec-consistent: predictive cap break, warm-up error seeds streak, harness fidelity fixes; Minor: no infinite-stream termination test, max-vs-mean estimator underfill trade-off)
+Task 5: complete (commits 0a63517..8fa4578, review clean; Minor: dual itertools import styles, ~31% docstring claim unvalidated)
+Task 6: complete (commits 8fa4578..0e42fd0 incl fix, review approved; Minor: HOSTED_MAX_TOOL_HOPS now unused, unused test imports, kaggle_cell2.py stale until Task 7)
+Task 7: complete (commit cbac090, smoke clean: 60s->360 fallback, 150s->live path 61s all-miss->fallback, 0 rejections; cell rebuilt, no path leaks)
+Final review: READY TO MERGE (0 Critical, 0 behavioral Important); fix wave f81186d: I1 run()-level live-fire test added, M1/M2/M3 docstring+warmup fixed; 33/33 tests, validate pass. V4 deferred: M4 minor cleanups, Harmony forgery, K-modes.
+V4 Task 1: complete (53ddff9..101a7c0, review clean; Minor: token-membership vs full-string equality in test)
+V4 Task 2: complete (101a7c0..77365fd, review approved; deviations adjudicated forced: warmup short-circuit in test fakes, deadline 40->50; Minor: idealized V3-stop comment, dup warmup guard)
+V4 Task 3: complete (77365fd..5d62eea, review clean; Minor: pre-existing unused test imports)
+V4 Task 4: complete (commit follows, smoke clean: validate pass; 60s->0.0s straight fallback 360 (edge-prune), 150s->live path 95s all-miss->fallback 360; both scores 0.00, 0 rejections, 360 unique cands within limits; cell rebuilt, embedded == attack.py, no path leaks)

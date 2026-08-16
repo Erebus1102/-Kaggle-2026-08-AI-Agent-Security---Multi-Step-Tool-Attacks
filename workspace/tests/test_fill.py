@@ -68,7 +68,7 @@ def test_fill_keeps_only_fired(monkeypatch):
     kept, live_ok = _fill(
         env, deadline=time.monotonic() + 1000,
         targets=itertools.islice(_url_stream(), 6),
-        make_msg=post_msg, replay_cap_s=10_000.0)
+        make_msgs=lambda t: [post_msg(t)], replay_cap_s=10_000.0)
     assert live_ok is True
     assert len(kept) == 3
 
@@ -79,7 +79,7 @@ def test_fill_stops_when_replay_cost_capped(monkeypatch):
     env = _ScriptedEnv(["fire"])
     kept, _ = _fill(
         env, deadline=time.monotonic() + 100_000,
-        targets=_url_stream(), make_msg=post_msg, replay_cap_s=25.0)
+        targets=_url_stream(), make_msgs=lambda t: [post_msg(t)], replay_cap_s=25.0)
     assert len(kept) == 2                     # 10+10=20 < 25, third would be 30
 
 
@@ -88,7 +88,7 @@ def test_fill_stops_at_deadline(monkeypatch):
     env = _ScriptedEnv(["fire"])
     kept, _ = _fill(
         env, deadline=time.monotonic() + 0.0,   # already expired
-        targets=_url_stream(), make_msg=post_msg, replay_cap_s=10_000.0)
+        targets=_url_stream(), make_msgs=lambda t: [post_msg(t)], replay_cap_s=10_000.0)
     assert kept == []
 
 
@@ -97,7 +97,7 @@ def test_fill_consecutive_errors_declare_env_unusable(monkeypatch):
     env = _ScriptedEnv(["error"])
     kept, live_ok = _fill(
         env, deadline=time.monotonic() + 1000,
-        targets=_url_stream(), make_msg=post_msg, replay_cap_s=10_000.0)
+        targets=_url_stream(), make_msgs=lambda t: [post_msg(t)], replay_cap_s=10_000.0)
     assert live_ok is False
     assert kept == []
     assert len(env.probed) == MAX_CONSECUTIVE_ERRORS   # bailed right at 5
@@ -112,6 +112,93 @@ def test_fill_clean_miss_resets_error_streak(monkeypatch):
         # 7 targets = pattern length (warm-up consumes the first 'error');
         # infinite stream would never stop: streak resets, cap far away.
         targets=itertools.islice(_url_stream(), 7),
-        make_msg=post_msg, replay_cap_s=10_000.0)
+        make_msgs=lambda t: [post_msg(t)], replay_cap_s=10_000.0)
     assert live_ok is True                    # never 5 in a row
     assert len(kept) == 1
+
+
+# --- V4 multi-variant fill ----------------------------------------------------
+# Brief deviations (details in .superpowers/sdd/v4-task-2-report.md): the
+# brief's _fill warms up through the SAME monkeypatched _probe, but its
+# three new tests were written as if no warm-up existed (calls==6, script
+# aligned to the first probe, elapsed sized 15 for 15 targets). The fakes
+# below short-circuit the warm-up message so every brief assertion stays
+# verbatim. test_fill_mean_estimator_survives_slow_outlier additionally
+# widens the deadline 40->50s: with 5s probes + a 100s outlier, at n=8
+# probes mean=16.9s trips the slow-row branch (2.5x mean = 42.2s >= 40) —
+# the brief's comment considered only the 1.5x path. V3 contrast holds:
+# the max-estimator locks at 150s >= 50 and stops at 6 probes.
+
+
+def test_fill_probes_every_variant_per_target(monkeypatch):
+    import attack as attack_mod
+    from attack import post_msg_variants
+    env = _ScriptedEnv(["fire"])            # everything fires
+    calls = []
+
+    def fake_probe(env_, msg, hops=1):
+        if "warmup.example.org" in msg:    # warm-up: not counted below
+            return True, False, 1.0
+        calls.append(msg)
+        return True, False, 5.0
+    monkeypatch.setattr(attack_mod, "_probe", fake_probe)
+    import itertools as _it
+    from attack import _url_stream
+    kept, live_ok = _fill(
+        env, deadline=__import__("time").monotonic() + 1000,
+        targets=_it.islice(_url_stream(), 3),
+        make_msgs=post_msg_variants, replay_cap_s=10_000.0)
+    assert len(calls) == 6                  # 3 targets × 2 variants
+    assert live_ok is True and len(kept) == 6
+
+
+def test_fill_keeps_only_forged_when_plain_misses(monkeypatch):
+    import attack as attack_mod
+    from attack import post_msg_variants
+    env = _ScriptedEnv(["miss", "fire"])    # plain misses, forged fires
+
+    def fake_probe(env_, msg, hops=1):
+        if "warmup.example.org" in msg:    # warm-up: advances no script
+            return True, False, 1.0
+        outcome = env_.export_trace_dict()  # advances script
+        fired = bool(outcome.get("tool_events"))
+        return fired, False, 5.0
+    monkeypatch.setattr(attack_mod, "_probe", fake_probe)
+    import itertools as _it
+    from attack import _url_stream
+    kept, _ = _fill(
+        env, deadline=__import__("time").monotonic() + 1000,
+        targets=_it.islice(_url_stream(), 2),
+        make_msgs=post_msg_variants, replay_cap_s=10_000.0)
+    assert len(kept) == 2                   # one forged per URL
+    for c in kept:
+        assert c.user_messages[0].startswith("http.post url=")
+
+
+def test_fill_mean_estimator_survives_slow_outlier(monkeypatch):
+    # V3 regression: max-estimator locked margin at 1.5×100=150s forever
+    # after one outlier; mean recovers. deadline 50s lets V4 continue
+    # (past both the 1.5x mean=24 -> 36s edge at probe 6 AND the slow-row
+    # 2.5x mean=16.9 -> 42.2s edge at probe 9).
+    import attack as attack_mod
+    import time as _time
+    import itertools as _it
+    from attack import _url_stream, post_msg
+    env = _ScriptedEnv(["fire"])
+    elapsed = iter([5.0, 5.0, 5.0, 5.0, 100.0] + [5.0] * 10)
+    probes = []
+
+    def fake_probe(env_, msg, hops=1):
+        if "warmup.example.org" in msg:    # warm-up: not counted below
+            return True, False, 1.0
+        probes.append(msg)
+        return True, False, next(elapsed)
+    monkeypatch.setattr(attack_mod, "_probe", fake_probe)
+    kept, _ = _fill(
+        env, deadline=_time.monotonic() + 50.0,
+        targets=_it.islice(_url_stream(), 15),
+        make_msgs=lambda t: [post_msg(t)], replay_cap_s=10_000.0)
+    # V3 semantics stop at the 5th probe (max=100 -> margin 150 >= 50);
+    # mean semantics: after 5 probes mean=24 -> margin 36 < 50, continue.
+    assert len(probes) == 15
+    assert len(kept) == 15
