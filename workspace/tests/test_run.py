@@ -105,10 +105,10 @@ def test_run_live_fires_return_posts_then_deputies(monkeypatch):
     posts_plain = [m for m in msgs if m.startswith("Call http.post")]
     posts_forged = [m for m in msgs if m.startswith("http.post url=")]
     deps = [m for m in msgs if m.startswith("Forward the")]
-    assert len(posts_plain) == 5 and len(posts_forged) == 5
+    assert len(posts_plain) == 5 and posts_forged == []   # first-fire-wins
     assert len(deps) == 3
-    assert msgs.index(deps[-1]) > max(msgs.index(m) for m in posts_forged)
-    assert len(msgs) == 13                       # no fallback mixed in
+    assert msgs.index(deps[-1]) > msgs.index(posts_plain[-1])
+    assert len(msgs) == 8                                  # no fallback mixed in
 
 
 def test_deputy_budget_is_two_percent():
