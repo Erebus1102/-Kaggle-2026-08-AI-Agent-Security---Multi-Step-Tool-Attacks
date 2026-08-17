@@ -54,3 +54,8 @@ V4 Task 1: complete (53ddff9..101a7c0, review clean; Minor: token-membership vs 
 V4 Task 2: complete (101a7c0..77365fd, review approved; deviations adjudicated forced: warmup short-circuit in test fakes, deadline 40->50; Minor: idealized V3-stop comment, dup warmup guard)
 V4 Task 3: complete (77365fd..5d62eea, review clean; Minor: pre-existing unused test imports)
 V4 Task 4: complete (commit follows, smoke clean: validate pass; 60s->0.0s straight fallback 360 (edge-prune), 150s->live path 95s all-miss->fallback 360; both scores 0.00, 0 rejections, 360 unique cands within limits; cell rebuilt, embedded == attack.py, no path leaks)
+V4 final review: READY TO SUBMIT (0C/0I; forged template no rejection vector, margin arithmetic covers 2-probe targets); minors deferred to V5
+V5 Task 1: complete (980e0d4..c07493b, review clean; Minor: stale V4 comment header in test_fill)
+V5 Task 2: complete (c07493b..b6aff35, review clean; brief typo total-39 noted)
+V5 Task 3: complete (b6aff35..c757f90, merged a900c47, smoke clean)
+V5 final review: READY TO SUBMIT (throughput sim: fast 0.91-0.95x V3, slow-row up to 2.74x; minors deferred to V6)
