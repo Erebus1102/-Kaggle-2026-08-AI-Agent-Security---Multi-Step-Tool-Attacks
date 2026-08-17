@@ -188,12 +188,12 @@ def _fill(env, deadline, targets, make_msgs, replay_cap_s,
           warmup_target: str = "https://warmup.example.org/log"):
     """Probe message variants per target until replay/deadline caps.
 
-    V4: make_msgs(target) returns a list of variants (plain + forged);
-    each variant is probed independently and kept iff it fires — both
-    firing means both are kept. Misses cost generation wall-clock but no
-    replay budget. Edge margin uses MEAN probe latency (a max estimator
-    locked the margin after one slow outlier, under-filling the window),
-    floored at EDGE_MARGIN_FLOOR_S.
+    V5: make_msgs(target) returns a list of variants (plain + forged);
+    a firing variant is collected and the target's remaining variants
+    are skipped (first-fire-wins; unique coverage beats duplicates).
+    Misses cost generation wall-clock but no replay budget. Edge margin
+    uses MEAN probe latency (a max estimator locked the margin after one
+    slow outlier, under-filling the window), floored at EDGE_MARGIN_FLOOR_S.
     """
     _, warm_errored, _ = _probe(env, make_msgs(warmup_target)[0])
     out: list[AttackCandidate] = []
@@ -221,9 +221,11 @@ def _fill(env, deadline, targets, make_msgs, replay_cap_s,
                     return out, False
                 continue
             consecutive_errors = 0
-            if fired and _valid_candidate((msg,)):
-                replay_cost += elapsed
-                out.append(AttackCandidate(user_messages=(msg,)))
+            if fired:
+                if _valid_candidate((msg,)):
+                    replay_cost += elapsed
+                    out.append(AttackCandidate(user_messages=(msg,)))
+                break   # V5 first-fire-wins: skip remaining variants for this target
     return out, True
 
 
