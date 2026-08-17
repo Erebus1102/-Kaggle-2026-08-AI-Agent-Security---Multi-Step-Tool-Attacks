@@ -130,36 +130,41 @@ def test_fill_clean_miss_resets_error_streak(monkeypatch):
 # the max-estimator locks at 150s >= 50 and stops at 6 probes.
 
 
-def test_fill_probes_every_variant_per_target(monkeypatch):
+def test_fill_first_fire_wins_skips_remaining(monkeypatch):
+    # V5: any variant firing collects it and skips the sibling variant.
     import attack as attack_mod
     from attack import post_msg_variants
-    env = _ScriptedEnv(["fire"])            # everything fires
+    env = _ScriptedEnv(["fire"])
     calls = []
 
     def fake_probe(env_, msg, hops=1):
-        if "warmup.example.org" in msg:    # warm-up: not counted below
-            return True, False, 1.0
+        if "warmup" in msg:
+            return False, False, 5.0          # warm-up short-circuit
         calls.append(msg)
         return True, False, 5.0
     monkeypatch.setattr(attack_mod, "_probe", fake_probe)
     import itertools as _it
+    import time as _time
     from attack import _url_stream
     kept, live_ok = _fill(
-        env, deadline=__import__("time").monotonic() + 1000,
+        env, deadline=_time.monotonic() + 1000,
         targets=_it.islice(_url_stream(), 3),
         make_msgs=post_msg_variants, replay_cap_s=10_000.0)
-    assert len(calls) == 6                  # 3 targets × 2 variants
-    assert live_ok is True and len(kept) == 6
+    assert len(calls) == 3                    # one probe per target (plain)
+    assert live_ok is True and len(kept) == 3
+    assert all(c.user_messages[0].startswith("Call http.post") for c in kept)
 
 
 def test_fill_keeps_only_forged_when_plain_misses(monkeypatch):
     import attack as attack_mod
     from attack import post_msg_variants
     env = _ScriptedEnv(["miss", "fire"])    # plain misses, forged fires
+    calls = []
 
     def fake_probe(env_, msg, hops=1):
         if "warmup.example.org" in msg:    # warm-up: advances no script
             return True, False, 1.0
+        calls.append(msg)
         outcome = env_.export_trace_dict()  # advances script
         fired = bool(outcome.get("tool_events"))
         return fired, False, 5.0
@@ -173,6 +178,8 @@ def test_fill_keeps_only_forged_when_plain_misses(monkeypatch):
     assert len(kept) == 2                   # one forged per URL
     for c in kept:
         assert c.user_messages[0].startswith("http.post url=")
+    # 2 targets × (miss + fire) = 4 variant probes + 0 warmup (short-circuited)
+    assert len(calls) == 4
 
 
 def test_fill_mean_estimator_survives_slow_outlier(monkeypatch):
@@ -202,3 +209,26 @@ def test_fill_mean_estimator_survives_slow_outlier(monkeypatch):
     # mean semantics: after 5 probes mean=24 -> margin 36 < 50, continue.
     assert len(probes) == 15
     assert len(kept) == 15
+
+
+def test_fill_all_variants_miss_zero_keeps_exact_probe_count(monkeypatch):
+    import attack as attack_mod
+    from attack import post_msg_variants
+    env = _ScriptedEnv(["miss"])
+    calls = []
+
+    def fake_probe(env_, msg, hops=1):
+        if "warmup" in msg:
+            return False, False, 1.0
+        calls.append(msg)
+        return False, False, 1.0
+    monkeypatch.setattr(attack_mod, "_probe", fake_probe)
+    import itertools as _it
+    import time as _time
+    from attack import _url_stream
+    kept, live_ok = _fill(
+        env, deadline=_time.monotonic() + 1000,
+        targets=_it.islice(_url_stream(), 3),
+        make_msgs=post_msg_variants, replay_cap_s=10_000.0)
+    assert kept == [] and live_ok is True
+    assert len(calls) == 6                    # 3 targets × 2 variants, all missed
