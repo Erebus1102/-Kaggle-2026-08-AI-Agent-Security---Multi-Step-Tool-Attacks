@@ -31,3 +31,10 @@ def test_rejects_empty_string_message():
 
 def test_rejects_whitespace_message():
     assert _valid_candidate((" ",)) is False
+
+
+def test_v6_constants():
+    import attack
+    assert attack.REPLAY_SAFE_FRAC == 0.9995
+    assert attack.MULTIPOST_N == 4
+    assert attack.MULTIPOST_REPLAY_COEF == 2.0

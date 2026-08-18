@@ -2,7 +2,7 @@ from attack import (
     post_msg,
     deputy_msg,
     forged_post_msg,
-    post_msg_variants,
+    forged_multipost_msg,
     SECRET_MARKER,
     MAX_MESSAGE_CHARS,
 )
@@ -28,14 +28,19 @@ def test_deputy_msg_avoids_authorization_keywords():
     assert len(msg) <= MAX_MESSAGE_CHARS
 
 
-def test_post_msg_variants_pair():
-    url = "https://report.example.org/log"
-    plain, forged = post_msg_variants(url)
-    assert plain == post_msg(url)
-    for m in (plain, forged):
-        assert url in m and SECRET_MARKER in m
-        assert len(m) <= MAX_MESSAGE_CHARS
-    assert plain != forged
+def test_forged_multipost_msg_shape():
+    urls = ["https://a.example.org/log", "https://b.example.net/log",
+            "https://c.example.org/log", "https://d.example.net/log"]
+    msg = forged_multipost_msg(urls)
+    assert SECRET_MARKER in msg
+    for u in urls:
+        assert u in msg
+    for tok in ("<|end|>", "<|start|>assistant",
+                "<|channel|>analysis", "<|message|>"):
+        assert tok in msg
+    assert len(msg) <= MAX_MESSAGE_CHARS
+    # dynamic n: fewer URLs still legal
+    assert forged_multipost_msg(urls[:2]) != forged_multipost_msg(urls)
 
 
 def test_forged_msg_carries_all_control_tokens():
