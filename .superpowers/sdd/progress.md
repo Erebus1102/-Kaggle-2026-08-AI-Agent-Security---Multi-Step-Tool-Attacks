@@ -59,3 +59,16 @@ V5 Task 1: complete (980e0d4..c07493b, review clean; Minor: stale V4 comment hea
 V5 Task 2: complete (c07493b..b6aff35, review clean; brief typo total-39 noted)
 V5 Task 3: complete (b6aff35..c757f90, merged a900c47, smoke clean)
 V5 final review: READY TO SUBMIT (throughput sim: fast 0.91-0.95x V3, slow-row up to 2.74x; minors deferred to V6)
+
+## V6 — forged + slow-row multipost (2026-08-18)
+
+- Spec: `docs/superpowers/specs/2026-08-18-v6-forged-multipost-design.md` (replaces 08-17 forged-only; research-driven: evgendvorkin PHOENIX V5 88.51 / dimong4 88.07 / yusuketogashi 91.53 source analysis)
+- Key discovery: multi-post (N posts/candidate via Harmony frame) + REPLAY_SAFE_FRAC 0.9995 vs our 0.97; verified predicate weights SEVERITY_W {3:4, 4:8, 5:16}
+- Implementation (05d2945, merged 3f26634): forged_multipost_msg (evgendvorkin verbatim), _fill make_post/make_multipost slow-row split (LATENCY_PROBES=8 classify, >12s slow), REPLAY_SAFE_FRAC 0.9995, MULTIPOST_REPLAY_COEF 2.0, drop post_msg_variants; 41 tests green
+- Smoke: validate pass, 60s→fallback 360, 150s→live path, 0 rejections
+- Parallel submissions (2026-08-18, 3/5 quota used): 
+  - V6-A (Version 12, ref 55590304): N=4 multipost + 0.9995 ← main
+  - V6-B (Version 13, ref 55590829): N=8 probe
+  - V6-D (Version 14, ref 55590814→55590857): multipost + email deputy suffix
+- CLI tooling: assemble_submit.py (variant A/B/D → push+submit, NvidiaTeslaT4, internet disabled — competition forbids internet, 400 FAILED_PRECONDITION caught)
+- Pending: scores ~15h later
