@@ -38,3 +38,6 @@ def test_v6_constants():
     assert attack.REPLAY_SAFE_FRAC == 0.97
     assert attack.MULTIPOST_N == 4
     assert attack.MULTIPOST_REPLAY_COEF == 1.0
+    assert attack.PROBE_HOPS == 8          # V8: full-hop probe
+    assert attack.EDGE_MARGIN_FLOOR_S == 4.0  # V8: aggressive floor
+    assert attack.MARGIN_FRAC == 0.05        # V8: fill 95% of budget

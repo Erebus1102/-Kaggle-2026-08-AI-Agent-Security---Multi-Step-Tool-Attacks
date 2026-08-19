@@ -30,8 +30,8 @@ MAX_MESSAGES_PER_CANDIDATE: Final[int] = 32
 MAX_MESSAGE_CHARS: Final[int] = 2000
 
 # --- v3 engine constants ---
-PROBE_HOPS: Final[int] = 1                # single post records at hop-0
-MARGIN_FRAC: Final[float] = 0.15          # run() returns 'done', not timeout
+PROBE_HOPS: Final[int] = 8                # V8: full-hop probe (kill gen≠replay drift)
+MARGIN_FRAC: Final[float] = 0.05          # V8: fill uses 95% of budget (jed-v25)
 MAIN_FRAC: Final[float] = 0.98            # V4: deputy share 5% -> 2%
 REPLAY_SAFE_FRAC: Final[float] = 0.97     # stop vs 8750s replay window (probe-D verified)
 MULTIPOST_N: Final[int] = 4               # slow-row posts per candidate (evgendvorkin)
@@ -41,7 +41,7 @@ MIN_LIVE_BUDGET_S: Final[float] = 120.0   # below this: static fallback only
 MAX_CONSECUTIVE_ERRORS: Final[int] = 5    # live env declared unusable
 LATENCY_PROBES: Final[int] = 8            # probes before slow-row verdict
 SLOW_ROW_S: Final[float] = 12.0           # avg probe latency => slow row
-EDGE_MARGIN_FLOOR_S: Final[float] = 30.0   # V4: was inline 60.0
+EDGE_MARGIN_FLOOR_S: Final[float] = 4.0    # V8: jed-v25 aggressive floor (was 30.0)
 FALLBACK_POST_N: Final[int] = 300
 FALLBACK_DEPUTY_N: Final[int] = 60
 
@@ -297,7 +297,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
                 env, main_deadline, _url_stream(),
                 post_msg,
                 replay_cap_s=REPLAY_SAFE_FRAC * REPLAY_BUDGET_S,
-                make_multipost=forged_multipost_msg)
+                make_multipost=lambda urls: forged_post_msg(urls[0]))
             candidates += main
 
             if live_ok and main:
