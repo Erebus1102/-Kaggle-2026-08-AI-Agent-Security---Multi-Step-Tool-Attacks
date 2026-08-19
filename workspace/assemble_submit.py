@@ -68,6 +68,18 @@ def variant_attack(variant: str) -> str:
         )
         assert old_ret in src, "multipost return block not found"
         return src.replace(old_ret, new_ret)
+    if variant == "E":
+        # isolate multi4: slow row uses forged single-post (urls[0]) instead
+        old = "make_multipost=forged_multipost_msg)"
+        assert old in src
+        return src.replace(old,
+                           "make_multipost=lambda urls: forged_post_msg(urls[0]))")
+    if variant == "F":
+        # isolate REPLAY_SAFE_FRAC: 0.97 -> 0.9995
+        old = "REPLAY_SAFE_FRAC: Final[float] = 0.97"
+        assert old in src
+        return src.replace(old,
+                           "REPLAY_SAFE_FRAC: Final[float] = 0.9995")
     raise SystemExit(f"unknown variant {variant!r}")
 
 
