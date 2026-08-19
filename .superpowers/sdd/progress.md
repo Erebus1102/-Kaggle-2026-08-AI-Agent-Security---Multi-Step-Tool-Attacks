@@ -82,3 +82,11 @@ V5 final review: READY TO SUBMIT (throughput sim: fast 0.91-0.95x V3, slow-row u
 - Key local data (5-sample median): gemma plain 4.93 vs forged 3.14 raw/s; multi4 executes 4 posts on BOTH models (density 5.4-5.8). Ollama Cloud has load spikes (503), so density is noisy but fire-rate reliable.
 - Implementation: run() fast-row factory forged_post_msg→post_msg; MULTIPOST_REPLAY_COEF 2.0→1.0; REPLAY_SAFE_FRAC 0.9995→0.97. 41 tests green, validate + 2-tier smoke clean.
 - Submitted 2026-08-19: V7 ref 55613506 (Version 15), 4 submissions remaining today.
+
+## V8 — align jed-v25 (2026-08-19)
+
+- V7/E/F all negative: probe-D 65.2 still optimum; V7 51.7 (plain+multi4+coef1.0), probe-E 54.1 (plain+forged), probe-F 53.5 (V7+frac.9995).
+- Root cause found via jed-v25 line-by-line: PROBE_HOPS. jed-v25 uses PROBE_HOPS=0 (=8 hop) vs our 1 hop. hops=1 probe truncates plain's execution -> gen≠replay drift -> low fire rate. forged survives hops=1 (immediate post); plain needs hops=8 to fire.
+- Spec: docs/superpowers/specs/2026-08-19-v8-align-jedv25.md. Changes: PROBE_HOPS 1->8, slow row multi4->forged single, EDGE_MARGIN_FLOOR 30->4, MARGIN_FRAC 0.15->0.05.
+- 41 tests green, validate + smoke clean. Submitted V8 ref (Version 18).
+- Key learning: Ollama Cloud gemma4:31b predicted plain>forged (+57%) but hosted 26b is OPPOSITE (forged>plain). 31b cannot substitute for 26b.
