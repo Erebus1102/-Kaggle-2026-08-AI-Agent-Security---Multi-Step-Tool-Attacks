@@ -21,12 +21,21 @@ NORMALIZE_DENOM = 200000.0
 # hosted llama.cpp gpt-oss is slower than Bedrock by roughly this factor
 SPEED_RATIO = 2.4
 
-# measured on Bedrock gpt-oss (density_test.py), raw per Bedrock-second
+# measured on Ollama Cloud gpt-oss:20b / gemma4:31b (median of 3),
+# llama.cpp backend — same as hosted. raw per second, EXCLUDING cell +2.
+# Including cell novelty (+2 per candidate), density is roughly +0.4 higher
+# for single-post and +0.17 for multi4.
 BEDROCK_DENSITY = {
-    "single_post": 2.7,      # 16 raw / ~6s
-    "multi_post_4": 4.3,     # 48 raw / ~11s
-    "multi_post_6": 4.5,     # 80 raw / ~18s
+    "single_post": 3.74,     # gpt_oss forged 16 raw / 4.28s
+    "multi_post_4": 5.43,    # gpt_oss 64 raw / 11.78s
+    "single_post_gemma_plain": 5.47,  # gemma plain 16 raw / 2.92s
+    "multi_post_4_gemma": 5.65,       # gemma 64 raw / 11.33s
 }
+
+# speed ratio hosted llama.cpp (T4) vs Ollama Cloud. Calibrated so that
+# single_post predicts ~64.4 ≈ probe-D 65.2 observed. Ollama Cloud is a
+# fast hosted backend; the competition's T4 llama.cpp is ~2.4x slower.
+SPEED_RATIO = 2.4
 
 
 def hosted_density(template: str) -> float:
@@ -59,7 +68,7 @@ def main():
     print("=" * 60)
     print("Hosted-score prediction (tunable: SPEED_RATIO, gemma_fire_rate)")
     print("=" * 60)
-    for gpt_tmpl in ("single_post", "multi_post_4", "multi_post_6"):
+    for gpt_tmpl in ("single_post", "multi_post_4"):
         for gemma_fr in (1.0, 0.75, 0.5):
             pub = predict_public(gpt_tmpl, "single_post", gemma_fr)
             print(f"gpt={gpt_tmpl:14s} gemma_fire={gemma_fr:.2f} "
