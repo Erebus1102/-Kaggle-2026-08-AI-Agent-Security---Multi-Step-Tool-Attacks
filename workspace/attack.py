@@ -33,9 +33,9 @@ MAX_MESSAGE_CHARS: Final[int] = 2000
 PROBE_HOPS: Final[int] = 1                # single post records at hop-0
 MARGIN_FRAC: Final[float] = 0.15          # run() returns 'done', not timeout
 MAIN_FRAC: Final[float] = 0.98            # V4: deputy share 5% -> 2%
-REPLAY_SAFE_FRAC: Final[float] = 0.9995  # stop vs 8750s replay window (evgendvorkin)
+REPLAY_SAFE_FRAC: Final[float] = 0.97     # stop vs 8750s replay window (probe-D verified)
 MULTIPOST_N: Final[int] = 4               # slow-row posts per candidate (evgendvorkin)
-MULTIPOST_REPLAY_COEF: Final[float] = 2.0  # replay-cost: 1-hop probe -> 4-hop replay
+MULTIPOST_REPLAY_COEF: Final[float] = 1.0  # V7: probe 1-hop ~= replay cost (was 2.0 over-estimate)
 REPLAY_BUDGET_S: Final[float] = 8750.0    # hosted replay budget (per row)
 MIN_LIVE_BUDGET_S: Final[float] = 120.0   # below this: static fallback only
 MAX_CONSECUTIVE_ERRORS: Final[int] = 5    # live env declared unusable
@@ -295,7 +295,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
 
             main, live_ok = _fill(
                 env, main_deadline, _url_stream(),
-                forged_post_msg,
+                post_msg,
                 replay_cap_s=REPLAY_SAFE_FRAC * REPLAY_BUDGET_S,
                 make_multipost=forged_multipost_msg)
             candidates += main

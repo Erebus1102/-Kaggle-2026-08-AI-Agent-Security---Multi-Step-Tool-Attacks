@@ -219,7 +219,8 @@ def test_fill_multipost_replay_cost_uses_coef(monkeypatch):
         targets=_it.islice(_url_stream(), 8 + 4 * 5),
         make_post=post_msg, make_multipost=forged_multipost_msg,
         replay_cap_s=240.0)
-    # classify: 8 kept (20 each, coef 1) = 160; multipost kept until 160+40*2=240
-    assert len(kept) == 10
+    # classify: 8 kept (20 each, coef 1) = 160; V7 coef=1.0 so multipost
+    # adds 20 each: 160+20*3=220 < 240, 4th would be 240 >= 240 -> 3 multipost
+    assert len(kept) == 11
     multipost_msgs = [m for m in probed if "Forward the marker" in m]
-    assert len(multipost_msgs) == 2
+    assert len(multipost_msgs) == 3

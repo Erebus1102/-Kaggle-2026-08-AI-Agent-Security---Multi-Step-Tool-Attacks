@@ -35,6 +35,6 @@ def test_rejects_whitespace_message():
 
 def test_v6_constants():
     import attack
-    assert attack.REPLAY_SAFE_FRAC == 0.9995
+    assert attack.REPLAY_SAFE_FRAC == 0.97
     assert attack.MULTIPOST_N == 4
-    assert attack.MULTIPOST_REPLAY_COEF == 2.0
+    assert attack.MULTIPOST_REPLAY_COEF == 1.0

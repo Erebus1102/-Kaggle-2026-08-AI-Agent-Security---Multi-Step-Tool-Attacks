@@ -102,9 +102,9 @@ def test_run_live_fires_return_posts_then_deputies(monkeypatch):
                         lambda: iter(_it.islice(real_recips(), 3)))
     result = AttackAlgorithm().run(_FiringEnv(), AttackRunConfig(time_budget_s=8750))
     msgs = [c.user_messages[0] for c in result]
-    posts = [m for m in msgs if m.startswith("http.post url=")]
+    posts = [m for m in msgs if m.startswith("Call http.post")]
     deps = [m for m in msgs if m.startswith("Forward the")]
-    assert len(posts) == 5 and len(deps) == 3          # forged-only main
+    assert len(posts) == 5 and len(deps) == 3          # plain main (fast row)
     assert msgs.index(deps[-1]) > msgs.index(posts[-1])
     assert len(msgs) == 8                              # no fallback mixed in
 
