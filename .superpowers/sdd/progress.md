@@ -72,3 +72,13 @@ V5 final review: READY TO SUBMIT (throughput sim: fast 0.91-0.95x V3, slow-row u
   - V6-D (Version 14, ref 55590814→55590857): multipost + email deputy suffix
 - CLI tooling: assemble_submit.py (variant A/B/D → push+submit, NvidiaTeslaT4, internet disabled — competition forbids internet, 400 FAILED_PRECONDITION caught)
 - Pending: scores ~15h later
+
+## V7 — split-template fix (2026-08-19)
+
+- Spec: `docs/superpowers/specs/2026-08-19-v7-split-template-fix.md`
+- Root causes closed (Ollama Cloud local test): V6-A's two errors were (1) gemma row used forged (density 3.14) instead of plain (4.93, +57%), (2) multi4 replay_cost ×2.0 over-estimate.
+- Ollama Cloud local eval framework built: bedrock_agent.py → ollama_cloud_agent.py (gpt-oss:20b + gemma4:31b, llama.cpp backend, same as hosted). Fixes: arguments as dict (not JSON string), anyOf schema sanitize (email.list), tool-result roundtrip. Bedrock gemma-3 wrote code (unusable); Ollama gemma4 actually tool-calls.
+- Predictor self-consistent: probe-D 65.2 ≈ predicted 63.4; evgendvorkin 88.5 = predicted 88.5 EXACT (multi4 + gemma_fire 1.0).
+- Key local data (5-sample median): gemma plain 4.93 vs forged 3.14 raw/s; multi4 executes 4 posts on BOTH models (density 5.4-5.8). Ollama Cloud has load spikes (503), so density is noisy but fire-rate reliable.
+- Implementation: run() fast-row factory forged_post_msg→post_msg; MULTIPOST_REPLAY_COEF 2.0→1.0; REPLAY_SAFE_FRAC 0.9995→0.97. 41 tests green, validate + 2-tier smoke clean.
+- Submitted 2026-08-19: V7 ref 55613506 (Version 15), 4 submissions remaining today.
