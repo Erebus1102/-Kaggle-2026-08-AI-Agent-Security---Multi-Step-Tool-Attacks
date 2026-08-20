@@ -90,3 +90,11 @@ V5 final review: READY TO SUBMIT (throughput sim: fast 0.91-0.95x V3, slow-row u
 - Spec: docs/superpowers/specs/2026-08-19-v8-align-jedv25.md. Changes: PROBE_HOPS 1->8, slow row multi4->forged single, EDGE_MARGIN_FLOOR 30->4, MARGIN_FRAC 0.15->0.05.
 - 41 tests green, validate + smoke clean. Submitted V8 ref (Version 18).
 - Key learning: Ollama Cloud gemma4:31b predicted plain>forged (+57%) but hosted 26b is OPPOSITE (forged>plain). 31b cannot substitute for 26b.
+
+## V9 — forged "No analysis." injection (2026-08-19/20)
+
+- User decision: target 100+ (top ~25, stable gold), accept high risk.
+- Judgment: 100+ must break the 91 public ceiling. Reverse-engineered leader 137: gpt row ~180 = 2000 candidates × 4.4s/candidate; our V8 gpt row ~68 = 755 × 11.6s. The gap is per-candidate SPEED (2.65x), not raw/candidate.
+- Key discovery (Ollama gpt-oss:20b, exact hosted model): injecting "No analysis." into the analysis channel cuts final-answer length 829->38 chars (2.65x faster), median elapsed 4.2s vs 6.0s empty. This is the suspected leader mechanism.
+- Change: forged_post_msg analysis channel now injects "No analysis." (evgendvorkin BEST_HARMONY wording). 41 tests green, validate pass.
+- Submitted V9 ref (Version 19). Expectation: gpt row +30% speed -> candidates +43% -> mean ~82-88.
