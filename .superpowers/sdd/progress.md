@@ -98,3 +98,11 @@ V5 final review: READY TO SUBMIT (throughput sim: fast 0.91-0.95x V3, slow-row u
 - Key discovery (Ollama gpt-oss:20b, exact hosted model): injecting "No analysis." into the analysis channel cuts final-answer length 829->38 chars (2.65x faster), median elapsed 4.2s vs 6.0s empty. This is the suspected leader mechanism.
 - Change: forged_post_msg analysis channel now injects "No analysis." (evgendvorkin BEST_HARMONY wording). 41 tests green, validate pass.
 - Submitted V9 ref (Version 19). Expectation: gpt row +30% speed -> candidates +43% -> mean ~82-88.
+
+## V10 — replicate jed-v25 _fill (2026-08-20)
+
+- User chose A (replicate jed-v25 to lift gpt-row median, not lottery).
+- V9 result: 67.185 ≈ V8 67.78 — "No analysis." no-op on hosted Q4 (local Ollama prediction falsified again; quantization difference).
+- Key analysis: our gemma plain row (hops=8) already ~80 = parity with leaders; the gap is ALL in the gpt row (~55 vs ~87-96). Root cause: our mean_probe estimator gets diluted by fast probes under hops=8 (elapsed=full replay), causing replay_cost underestimate → candidate overfill → replay timeout truncation. jed-v25's SLOWEST (max) estimator never dilutes.
+- V10 (cee5185): _fill rewritten to jed-v25 logic — slowest=max(slowest,elapsed) seeded at SLOWEST0=25, replay_stop uses slowest*1.35, warm-up elapsed subtracted from replay_cap, adaptive margin min(47,4+2.5*slowest); slow row jedv25_frame_msg (plain verbose prefix + Harmony token hybrid, jed-v25 FRAME_TEMPLATE verbatim). 40 tests green.
+- Submitted V10 (Version 21). Expectation: gpt-row median 55→~80, mean 75-85.
