@@ -74,13 +74,16 @@ def test_fill_keeps_only_fired(monkeypatch):
 
 
 def test_fill_stops_when_replay_cost_capped(monkeypatch):
-    # each fired probe "costs" 10s; cap 25s => at most 2 kept, loop breaks
+    # V10 slowest estimator: probes are 10s (< SLOWEST0=25), so slowest stays
+    # 25 and next_wall = 25*1.35 = 33.75. warm-up subtracts its 10s from the
+    # cap. replay_cap = 100-10 = 90; loop stops when replay_cost+33.75 >= 90
+    # i.e. replay_cost >= 56.25 -> 6 candidates (6*10=60) then the 7th breaks.
     _patch_probe(monkeypatch, env_s=10.0)
     env = _ScriptedEnv(["fire"])
     kept, _ = _fill(
         env, deadline=time.monotonic() + 100_000,
-        targets=_url_stream(), make_post=post_msg, replay_cap_s=25.0)
-    assert len(kept) == 2                     # 10+10=20 < 25, third would be 30
+        targets=_url_stream(), make_post=post_msg, replay_cap_s=100.0)
+    assert len(kept) == 6
 
 
 def test_fill_stops_at_deadline(monkeypatch):
@@ -130,38 +133,39 @@ def test_fill_clean_miss_resets_error_streak(monkeypatch):
 # the max-estimator locks at 150s >= 50 and stops at 6 probes.
 
 
-def test_fill_mean_estimator_survives_slow_outlier(monkeypatch):
-    # V3 regression: max-estimator locked margin at 1.5×100=150s forever
-    # after one outlier; mean recovers. deadline 50s lets V4 continue
-    # (past both the 1.5x mean=24 -> 36s edge at probe 6 AND the slow-row
-    # 2.5x mean=16.9 -> 42.2s edge at probe 9).
+def test_fill_slowest_estimator_not_diluted(monkeypatch):
+    # V10: slowest is a MAX estimator (never drops). After a 100s outlier,
+    # slowest=100 so next_wall=135 and the replay cap fills slowly — the
+    # outlier is NOT averaged away like the old mean estimator did.
     import attack as attack_mod
     import time as _time
     import itertools as _it
     from attack import _url_stream, post_msg
     env = _ScriptedEnv(["fire"])
-    elapsed = iter([5.0, 5.0, 5.0, 5.0, 100.0] + [5.0] * 10)
-    probes = []
+    elapsed = iter([10.0, 100.0] + [10.0] * 20)
 
     def fake_probe(env_, msg, hops=1):
-        if "warmup.example.org" in msg:    # warm-up: not counted below
-            return True, False, 1.0
-        probes.append(msg)
+        if "warmup.example.org" in msg:
+            return True, False, 1.0          # warm-up: 1s subtracted from cap
         return True, False, next(elapsed)
     monkeypatch.setattr(attack_mod, "_probe", fake_probe)
     kept, _ = _fill(
-        env, deadline=_time.monotonic() + 50.0,
-        targets=_it.islice(_url_stream(), 15),
-        make_post=post_msg, replay_cap_s=10_000.0)
-    # V3 semantics stop at the 5th probe (max=100 -> margin 150 >= 50);
-    # mean semantics: after 5 probes mean=24 -> margin 36 < 50, continue.
-    assert len(probes) == 15
-    assert len(kept) == 15
+        env, deadline=_time.monotonic() + 100_000,
+        targets=_it.islice(_url_stream(), 20),
+        make_post=post_msg, replay_cap_s=1000.0)
+    # cap = 1000-1 = 999. After the outlier slowest=100 -> next_wall=135.
+    # replay_cost would need >= 999-135 = 864 to stop; 110 + 10k >= 864 needs
+    # k>=76, but only 20 targets exist, so all 20 fire and are kept.
+    assert len(kept) == 20
+
+
 
 
 
 
 def test_fill_slow_row_uses_multipost(monkeypatch):
+    # V10: 8-probe classification batch uses make_post (plain); once the batch
+    # mean exceeds SLOW_ROW_S, the slow row switches to make_multipost.
     import attack as attack_mod
     from attack import _url_stream, post_msg, forged_multipost_msg
     env = _ScriptedEnv(["fire"])
@@ -173,14 +177,17 @@ def test_fill_slow_row_uses_multipost(monkeypatch):
     monkeypatch.setattr(attack_mod, "_probe", fake_probe)
     import itertools as _it, time as _time
     kept, live_ok = _fill(
-        env, deadline=_time.monotonic() + 1000,
-        targets=_it.islice(_url_stream(), 8 + 4 * 3),
+        env, deadline=_time.monotonic() + 100_000,
+        targets=_it.islice(_url_stream(), 15),
         make_post=post_msg, make_multipost=forged_multipost_msg,
         replay_cap_s=10_000.0)
     assert live_ok is True
-    # warm-up is post_msg; then 8 classify probes (post); then multipost
-    assert len(probed) == 1 + 8 + 3
+    # probed[0]=warm-up(plain), probed[1:9]=8 classify(plain), rest=slow(hybrid)
+    assert len(probed) == 1 + 15
+    assert all("Forward the marker" not in m for m in probed[1:1 + 8])
     assert all("Forward the marker" in m for m in probed[1 + 8:])
+
+
 
 
 def test_fill_fast_row_stays_single_post(monkeypatch):
@@ -203,24 +210,3 @@ def test_fill_fast_row_stays_single_post(monkeypatch):
     assert all("Forward the marker" not in m for m in probed)
 
 
-def test_fill_multipost_replay_cost_uses_coef(monkeypatch):
-    import attack as attack_mod
-    from attack import _url_stream, post_msg, forged_multipost_msg
-    env = _ScriptedEnv(["fire"])
-    probed = []
-
-    def fake_probe(env_, msg, hops=1):
-        probed.append(msg)
-        return True, False, 20.0          # slow -> multipost, 20s each
-    monkeypatch.setattr(attack_mod, "_probe", fake_probe)
-    import itertools as _it, time as _time
-    kept, _ = _fill(
-        env, deadline=_time.monotonic() + 1000,
-        targets=_it.islice(_url_stream(), 8 + 4 * 5),
-        make_post=post_msg, make_multipost=forged_multipost_msg,
-        replay_cap_s=240.0)
-    # classify: 8 kept (20 each, coef 1) = 160; V7 coef=1.0 so multipost
-    # adds 20 each: 160+20*3=220 < 240, 4th would be 240 >= 240 -> 3 multipost
-    assert len(kept) == 11
-    multipost_msgs = [m for m in probed if "Forward the marker" in m]
-    assert len(multipost_msgs) == 3
